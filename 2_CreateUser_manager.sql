@@ -1,2 +1,0 @@
-CREATE USER manager WITH PASSWORD 'password';
-GRANT ALL PRIVILEGES ON DATABASE weatherdb TO manager;
