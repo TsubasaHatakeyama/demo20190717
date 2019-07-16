@@ -1,0 +1,146 @@
+■セミナー用Azureアカウント
+ID：user001～020@researchcloudsvcco.onmicrosoft.com
+PW：svc@1216
+
+
+■仮想マシン情報
+・VM作成
+Connect-AzAccount
+⇒Azureアカウントとパスワードを入力
+
+CreateVM_CentOS7.ps1を実行
+⇒実行前にパラメータを編集
+ >$resourceGroupName ='demo-RG<社員番号>'
+ >$vmname='demo-VM<社員番号>'
+ >$vnetname = 'demo-Vnet<社員番号>'
+
+・パブリックIPアドレス確認
+Get-AzPublicIpAddress -ResourceGroupName demo-RG<社員番号> | Select "IpAddress"
+
+・TeraTearmで接続
+パブリックIPアドレス：
+ユーザー名：azuser
+RSAキーを設定(.ssh/id_rsa.pub)
+
+■OS初期設定
+・swapの作成
+sudo vi /etc/waagent.conf
+=======================
+以下に変更または追記
+ResourceDisk.EnableSwap=y
+ResourceDisk.SwapSizeMB=16384
+=======================
+
+・タイムゾーンの変更
+sudo timedatectl set-timezone Asia/Tokyo
+sudo timedatectl set-local-rtc 0
+
+・言語、キーボードの変更
+localectl set-locale LANG=ja_JP.utf8
+localectl set-keymap jp106
+
+・SELinux無効化
+sudo vi /etc/selinux/config
+=======================
+以下に変更
+SELINUX=disabled
+=======================
+
+・rootのパスワード設定
+sudo su -
+passwd
+⇒rootのパスワード：Svc19871216!　←これに設定する
+
+・最後に再起動
+shutdown -r now
+⇒再起動後にrootでSSHにてログイン
+
+・swap確認
+free
+・タイムゾーン確認
+timedatectl
+・言語、キーボード確認
+localectl status
+・SELinux確認
+getenforce
+
+
+
+
+■準備
+・Python3.7.3インストール
+　yum clean all
+　yum -y update
+　yum -y install zlib-devel libffi-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel libuuid-devel xz-devel gcc
+　curl -O https://www.python.org/ftp/python/3.7.3/Python-3.7.3.tgz
+　tar xf Python-3.7.3.tgz
+　cd Python-3.7.3
+　./configure --enable-optimizations
+　make
+　make altinstall
+　visudo
+　=======================
+　変更前：Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin
+　変更後：Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+　⇒「:/usr/local/bin」を行末に追記
+(wq!)で閉じる
+　python3.7 -V
+　⇒バージョンを確認
+
+・postgresqlインストール
+　yum install postgresql
+　yum install postgresql-devel
+
+・requestsライブラリの追加
+　pip3.7 install requests
+
+・psycopg2ライブラリの追加
+pip install psycopg2
+
+
+■Azure Database for PostgreSQL
+サーバー名：demo-DB<社員番号>.postgres.database.azure.com
+管理者ユーザー名：azuser
+パスワード：Passw0rd
+DB名(デフォルト)：postgres
+接続文字列：
+
+・ファイアウォールでAzureサービス、クライアントIPを許可(GUIから)
+
+・DBに接続(VMから)
+psql -h <サーバー名> -U <ユーザー名> <DB名>
+
+■DB準備
+・データベース作成
+1_CreateDB_weatherdb.sqlを実行
+
+・ユーザー作成
+2_CreateUser_manager.sqlを実行
+
+・テーブル作成
+3_CreateTable_tenki.sqlを実行
+
+■Django用管理テーブルおよびスーパーユーザー作成
+・環境変数設定
+export DBHOST="demo-DB<社員番号>.postgres.database.azure.com"
+export DBUSER="manager@demo-DB<社員番号>"
+export DBNAME="weatherdb"
+export DBPASS="password"
+
+・Django用管理テーブルおよびスーパーユーザー作成
+python3.7 manage.py migrate
+python3.7 manage.py createsuperuser
+
+■Web Apps
+URL：
+
+
+
+
+
+
+
+
+
+
+
