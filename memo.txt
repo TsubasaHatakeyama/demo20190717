@@ -1,18 +1,33 @@
+■事前準備
+1.資料のダウンロード
+以下から一式ダウンロードする
+https://github.com/TsubasaHatakeyama/demo20190717.git
+
+2.ダウンロードしたZIPファイルを解凍する
+
 ■セミナー用Azureアカウント
+Azure Portal URL：https://azure.microsoft.com/ja-jp/features/azure-portal/
 ID：user001～020@researchcloudsvcco.onmicrosoft.com
 PW：svc@1216
 
 
 ■仮想マシン情報
-・VM作成
+・VM作成　PowerShellで実行
 Connect-AzAccount
 ⇒Azureアカウントとパスワードを入力
 
-CreateVM_CentOS7.ps1を実行
-⇒実行前にパラメータを編集
+・フォルダを移動する
+
+
+・実行前に「CreateVM_CentOS7.ps1」のパラメータを編集
  >$resourceGroupName ='demo-RG<社員番号>'
  >$vmname='demo-VM<社員番号>'
  >$vnetname = 'demo-Vnet<社員番号>'
+
+
+・0_CreateVM_CentOS7.ps1を実行　（約5分）
+.\0_CreateVM_CentOS7.ps1
+
 
 ・パブリックIPアドレス確認
 Get-AzPublicIpAddress -ResourceGroupName demo-RG<社員番号> | Select "IpAddress"
@@ -20,10 +35,11 @@ Get-AzPublicIpAddress -ResourceGroupName demo-RG<社員番号> | Select "IpAddress"
 ・TeraTearmで接続
 パブリックIPアドレス：
 ユーザー名：azuser
-RSAキーを設定(.ssh/id_rsa.pub)
+RSAキーを設定(ssh/id_rsa)
 
 ■OS初期設定
 ・swapの作成
+free
 sudo vi /etc/waagent.conf
 =======================
 以下に変更または追記
@@ -32,14 +48,17 @@ ResourceDisk.SwapSizeMB=16384
 =======================
 
 ・タイムゾーンの変更
+timedatectl
 sudo timedatectl set-timezone Asia/Tokyo
 sudo timedatectl set-local-rtc 0
 
 ・言語、キーボードの変更
-localectl set-locale LANG=ja_JP.utf8
-localectl set-keymap jp106
+localectl status
+sudo localectl set-locale LANG=ja_JP.utf8
+sudo localectl set-keymap jp106
 
 ・SELinux無効化
+getenforce
 sudo vi /etc/selinux/config
 =======================
 以下に変更
@@ -48,12 +67,15 @@ SELINUX=disabled
 
 ・rootのパスワード設定
 sudo su -
+id
 passwd
 ⇒rootのパスワード：Svc19871216!　←これに設定する
 
 ・最後に再起動
 shutdown -r now
-⇒再起動後にrootでSSHにてログイン
+⇒再起動後、rootでログイン
+su -
+id
 
 ・swap確認
 free
@@ -67,16 +89,25 @@ getenforce
 
 
 
-■準備
-・Python3.7.3インストール
+■準備　(約40分)
+・パッケージの最適化
 　yum clean all
 　yum -y update
 　yum -y install zlib-devel libffi-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel libuuid-devel xz-devel gcc
+
+・postgresqlインストール
+　yum -y install postgresql
+　yum -y install postgresql-devel
+
+・Python3.7.3インストール
+　cd /tmp
 　curl -O https://www.python.org/ftp/python/3.7.3/Python-3.7.3.tgz
+　ls -l
 　tar xf Python-3.7.3.tgz
+　ls -l
 　cd Python-3.7.3
 　./configure --enable-optimizations
-　make
+　make　※ここが長い(休憩ポイント)
 　make altinstall
 　visudo
 　=======================
@@ -87,60 +118,119 @@ getenforce
 　python3.7 -V
 　⇒バージョンを確認
 
-・postgresqlインストール
-　yum install postgresql
-　yum install postgresql-devel
+・pipライブラリのアップグレード
+　pip3.7 install --upgrade pip
 
 ・requestsライブラリの追加
 　pip3.7 install requests
 
 ・psycopg2ライブラリの追加
-pip install psycopg2
+pip3.7 install psycopg2
+
+・スクリプトの配置(rootで実行)
+　scpでスクリプトを配置
+　配置先：/opt
+　scriptsフォルダごと配置
+
+・実行権限の付与
+　cd /opt/scripts
+　chmod +x ./*.py
+　chmod +x ./*.sql
+
 
 
 ■Azure Database for PostgreSQL
-サーバー名：demo-DB<社員番号>.postgres.database.azure.com
+・Azure Portalから作成
+
+サーバー名：demo-db<社員番号>
 管理者ユーザー名：azuser
 パスワード：Passw0rd
 DB名(デフォルト)：postgres
-接続文字列：
+接続文字列：dbname='{your_database}' user='azuser@demo-db<社員番号>' host='demo-db<社員番号>.postgres.database.azure.com’ password='{your_password}' port='5432'
 
-・ファイアウォールでAzureサービス、クライアントIPを許可(GUIから)
+・ファイアウォールでAzureサービスを許可(GUIから)
+・SSLの無効化
+
+・接続文字列を控える
 
 ・DBに接続(VMから)
+cd /opt/scripts
 psql -h <サーバー名> -U <ユーザー名> <DB名>
+例：psql -h demo-db<社員番号>.postgres.database.azure.com -U azuser@demo-db<社員番号> postgres
+
 
 ■DB準備
 ・データベース作成
 1_CreateDB_weatherdb.sqlを実行
+\i 1_CreateDB_weatherdb.sql
+\l
 
 ・ユーザー作成
 2_CreateUser_manager.sqlを実行
+\i 2_CreateUser_manager.sql
+\du
+
+・DB切断
+\q
+
+・作成したDBに作成したユーザーで接続
+psql -h <サーバー名> -U <ユーザー名> weatherdb
+例：psql -h demo-db<社員番号>.postgres.database.azure.com -U manager@demo-db<社員番号> weatherdb
+
 
 ・テーブル作成
 3_CreateTable_tenki.sqlを実行
+\i 3_CreateTable_tenki.sql
 
-■Django用管理テーブルおよびスーパーユーザー作成
-・環境変数設定
-export DBHOST="demo-DB<社員番号>.postgres.database.azure.com"
-export DBUSER="manager@demo-DB<社員番号>"
-export DBNAME="weatherdb"
-export DBPASS="password"
-
-・Django用管理テーブルおよびスーパーユーザー作成
-python3.7 manage.py migrate
-python3.7 manage.py createsuperuser
+・DB切断
+\q
 
 ■Web Apps
+・Azure Portalから作成
+名前(Webアプリ名)：WeatherSearch<社員番号>
+ランタイムスタック：Python 3.7
+ App Service プラン名：demo-web<社員番号>
 URL：
 
 
+■Webアプリのデプロイ
+
+・スロットを作成(PowerShellで実行)
+　⇒実行前にパラメータを編集
+.\1_CreateSlot.ps1
+
+・作成したスロットに移動(Azure Portalで実行)
+
+・ローカルGitからのデプロイ準備
+　デプロイセンターから設定
+　⇒FTPユーザーの設定もする
+
+　Git クローン URLを控える
+  確認：下記のようのURLが出力される
+  https://dp<社員番号>@weathersearch<社員番号>-staging.scm.azurewebsites.net:443/weathersearch<社員番号>.git
+                                             
+・DB接続情報をアプリの設定に追加
+　Azure Potalから接続文字列を設定(運用環境のスロットで実行)
+　dbname='weatherdb' user='manager@demo-db<社員番号>' host='demo-db<社員番号>.postgres.database.azure.com’ password='password' port='5432'
+　⇒デプロイスロットの設定にチェックを入れる
+
+・Webアプリのデプロイ(PowerShellで実行)
+　⇒実行前にパラメータを編集
+.\2_Deployment.ps1
 
 
+■ステージング環境で動作確認
+・VMでスクリプトを実施
+　python3.7 ./getWeather.py
+　python3.7 ./csv2db.py
 
+・ステージング環境にて動作確認
+https://weathersearch<社員番号>-staging.azurewebsites.net/
+⇒スロット「staging」のURL
 
+■運用環境へWebアプリをスワップ
+　⇒実行前にパラメータを編集
+.\3_Swap.ps1
 
-
-
-
-
+・運用環境で動作確認
+https://weathersearch<社員番号>.azurewebsites.net/
