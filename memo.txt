@@ -91,9 +91,9 @@ getenforce
 
 ■準備　(約40分)
 ・パッケージの最適化
-　yum clean all
-　yum -y update
-　yum -y install zlib-devel libffi-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel libuuid-devel xz-devel gcc
+	　yum clean all
+	　yum -y update
+	　yum -y install zlib-devel libffi-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel libuuid-devel xz-devel gcc
 
 ・postgresqlインストール
 　yum -y install postgresql
@@ -192,6 +192,14 @@ psql -h <サーバー名> -U <ユーザー名> weatherdb
  App Service プラン名：demo-web<社員番号>
 URL：
 
+・DB接続情報をアプリの設定に追加
+　Azure Potalからアプリケーション設定(運用環境のスロットで実行)
+　　名前：値	
+　・DBNAME:weatherdb
+　・DBUSER:manager@demo-db<社員番号>
+　・DBHOST:demo-db<社員番号>.postgres.database.azure.com
+　・DBPASS:password
+　⇒デプロイスロットの設定にチェックを入れる
 
 ■Webアプリのデプロイ
 
@@ -209,11 +217,6 @@ URL：
   確認：下記のようのURLが出力される
   https://dp<社員番号>@weathersearch<社員番号>-staging.scm.azurewebsites.net:443/weathersearch<社員番号>.git
                                              
-・DB接続情報をアプリの設定に追加
-　Azure Potalから接続文字列を設定(運用環境のスロットで実行)
-　dbname='weatherdb' user='manager@demo-db<社員番号>' host='demo-db<社員番号>.postgres.database.azure.com’ password='password' port='5432'
-　⇒デプロイスロットの設定にチェックを入れる
-
 ・Webアプリのデプロイ(PowerShellで実行)
 　⇒実行前にパラメータを編集
 .\2_Deployment.ps1
