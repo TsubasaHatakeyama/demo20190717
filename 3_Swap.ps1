@@ -4,7 +4,7 @@ $resourceGroupName ='demo-RG<社員番号>'
 # Webアプリ名(WebAppsの名前)
 $webappname="weathersearch<社員番号>"
 # スロット名
-$slotname="demo"
+$slotname="staging"
 #####パラメータ設定#####
 
 
