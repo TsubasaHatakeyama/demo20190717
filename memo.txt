@@ -7,8 +7,8 @@ https://github.com/TsubasaHatakeyama/demo20190717.git
 
 ■セミナー用Azureアカウント
 Azure Portal URL：https://azure.microsoft.com/ja-jp/features/azure-portal/
-ID：user001～020@researchcloudsvcco.onmicrosoft.com
-PW：svc@1216
+ID：userXXX0@XXXXX.onmicrosoft.com
+PW：
 
 
 ■仮想マシン情報
@@ -16,8 +16,8 @@ PW：svc@1216
 Connect-AzAccount
 ⇒Azureアカウントとパスワードを入力
 
-・フォルダを移動する
-
+・解凍したフォルダに移動する
+cd C:\Users\<user_name>\Desktop\demo20190717-master
 
 ・実行前に「CreateVM_CentOS7.ps1」のパラメータを編集
  >$resourceGroupName ='demo-RG<社員番号>'
@@ -32,68 +32,88 @@ Connect-AzAccount
 ・パブリックIPアドレス確認
 Get-AzPublicIpAddress -ResourceGroupName demo-RG<社員番号> | Select "IpAddress"
 
+・WinSCPでスクリプトの配置(azuserで実行)
+　scpでスクリプトを配置
+　配置先：/tmp
+　scriptsフォルダごと配置
+
+
 ・TeraTearmで接続
-パブリックIPアドレス：
-ユーザー名：azuser
-RSAキーを設定(ssh/id_rsa)
+　パブリックIPアドレス：
+　ユーザー名：azuser
+　RSAキーを設定(ssh/id_rsa)
 
 ■OS初期設定
+・rootのパスワード設定
+　sudo su -
+　id
+　passwd
+　⇒rootのパスワード：Svc19871216!　←これに設定する
+
+・scriptsフォルダを移動後にパーミッション変更
+　cd /tmp
+　mv ./scripts /opt/
+
+　cd /opt
+　chown -R root:root ./scripts
+
+　cd ./scripts
+　chmod +x ./*.py
+　chmod +x ./*.sql
+
+
 ・swapの作成
-free
-sudo vi /etc/waagent.conf
-=======================
-以下に変更または追記
-ResourceDisk.EnableSwap=y
-ResourceDisk.SwapSizeMB=16384
-=======================
+　free
+　vi /etc/waagent.conf
+　=======================
+　以下に変更または追記
+　ResourceDisk.EnableSwap=y
+　ResourceDisk.SwapSizeMB=16384
+　=======================
 
 ・タイムゾーンの変更
-timedatectl
-sudo timedatectl set-timezone Asia/Tokyo
-sudo timedatectl set-local-rtc 0
+　timedatectl
+　timedatectl set-timezone Asia/Tokyo
+　timedatectl set-local-rtc 0
 
 ・言語、キーボードの変更
-localectl status
-sudo localectl set-locale LANG=ja_JP.utf8
-sudo localectl set-keymap jp106
+　localectl status
+　localectl set-locale LANG=ja_JP.utf8
+　localectl set-keymap jp106
 
 ・SELinux無効化
-getenforce
-sudo vi /etc/selinux/config
-=======================
-以下に変更
-SELINUX=disabled
-=======================
+　getenforce
+　vi /etc/selinux/config
+　=======================
+　以下に変更
+　SELINUX=disabled
+　=======================
 
-・rootのパスワード設定
-sudo su -
-id
-passwd
-⇒rootのパスワード：Svc19871216!　←これに設定する
 
 ・最後に再起動
-shutdown -r now
-⇒再起動後、rootでログイン
-su -
-id
+　shutdown -r now
+　⇒再起動後、azuserでログインし、rootへsuする
+　su -
+　パスワード：←設定したパスワード(Svc19871216!)を入力
+　id
 
 ・swap確認
-free
+　free
 ・タイムゾーン確認
-timedatectl
+　timedatectl
 ・言語、キーボード確認
-localectl status
+　localectl status
 ・SELinux確認
-getenforce
+　getenforce
 
 
 
 
 ■準備　(約40分)
 ・パッケージの最適化
-	　yum clean all
-	　yum -y update
-	　yum -y install zlib-devel libffi-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel libuuid-devel xz-devel gcc
+　yum clean all
+　yum -y update
+　yum -y install zlib-devel libffi-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel libuuid-devel xz-devel gcc
 
 ・postgresqlインストール
 　yum -y install postgresql
@@ -114,7 +134,7 @@ getenforce
 　変更前：Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin
 　変更後：Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 　⇒「:/usr/local/bin」を行末に追記
-(wq!)で閉じる
+　=======================
 　python3.7 -V
 　⇒バージョンを確認
 
@@ -126,17 +146,6 @@ getenforce
 
 ・psycopg2ライブラリの追加
 pip3.7 install psycopg2
-
-・スクリプトの配置(rootで実行)
-　scpでスクリプトを配置
-　配置先：/opt
-　scriptsフォルダごと配置
-
-・実行権限の付与
-　cd /opt/scripts
-　chmod +x ./*.py
-　chmod +x ./*.sql
-
 
 
 ■Azure Database for PostgreSQL
